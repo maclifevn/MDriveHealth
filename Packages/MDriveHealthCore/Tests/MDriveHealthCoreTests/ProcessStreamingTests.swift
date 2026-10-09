@@ -33,10 +33,17 @@ final class ProcessStreamingTests: XCTestCase {
         catch let error as CommandError { XCTAssertEqual(error.reason, .idleTimedOut); XCTAssertLessThan(Date().timeIntervalSince(started), 2) }
     }
     func testVerifiedProgressExtendsIdleButNotHardDeadline() throws {
-        var c = command("for n in 1 2 3 4 5; do printf progress; sleep 0.05; done")
-        c.idleTimeout = 0.2; c.streamingStdout = .init(byteLimit: 65536, consume: { _ in true })
+        // Keep the fixture alive longer than its idle deadline while allowing
+        // scheduling headroom on shared CI hosts. Production deadlines stay unchanged.
+        let capture = StreamCapture()
+        var c = command("for n in 1 2 3 4 5 6 7 8 9 10; do printf progress; sleep 0.15; done")
+        c.timeout = 6; c.idleTimeout = 1
+        c.streamingStdout = .init(byteLimit: 65536, consume: { capture.append($0); return true })
+        let started = Date()
         XCTAssertTrue(try BoundedProcess.run(c).termination.succeeded)
-        c = command("while :; do printf progress; sleep 0.02; done"); c.timeout = 0.2; c.idleTimeout = 0.15
+        XCTAssertEqual(capture.value, Data(String(repeating: "progress", count: 10).utf8))
+        XCTAssertGreaterThan(Date().timeIntervalSince(started), 1)
+        c = command("while :; do printf progress; sleep 0.05; done"); c.timeout = 1.5; c.idleTimeout = 1
         c.streamingStdout = .init(byteLimit: 65536, consume: { _ in true })
         do { _ = try BoundedProcess.run(c); XCTFail("verified progress must not evade absolute deadline") }
         catch let error as CommandError { XCTAssertEqual(error.reason, .timedOut) }

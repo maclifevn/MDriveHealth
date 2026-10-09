@@ -9,7 +9,9 @@ enum MeasurementResultValidation {
                   result.randomBlockBytes == config.randomBlockBytes, result.queueDepth == config.queueDepth,
                   (result.randomWriteBytesPerSec != nil) == config.includeRandomPhases,
                   (result.randomReadBytesPerSec != nil) == config.includeRandomPhases else { throw MeasurementWorkerError.protocolViolation }
-        for rate in [result.sequentialWriteBytesPerSec,result.sequentialReadBytesPerSec,result.randomWriteBytesPerSec ?? 0,result.randomReadBytesPerSec ?? 0] { try validRate(rate) }
+        let rates: [Double] = [result.sequentialWriteBytesPerSec, result.sequentialReadBytesPerSec,
+                               result.randomWriteBytesPerSec ?? 0, result.randomReadBytesPerSec ?? 0]
+        for rate in rates { try validRate(rate) }
     }
     static func capacity(_ result: CapacityVerifyResult, volume: VolumeUsage, config: CapacityVerifyConfig) throws {
         guard result.capturedAt.timeIntervalSince1970.isFinite, result.volumeName == volume.name, result.mountPoint == volume.mountPoint,
