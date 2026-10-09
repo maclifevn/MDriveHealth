@@ -1,0 +1,14 @@
+.DS_Store
+.build/
+DerivedData/
+*.xcodeproj
+xcuserdata/
+*.xcresult
+dist/
+.swiftpm/
+build/
+__pycache__/
+*.py[cod]
+*.profraw
+*.profdata
+audit/evidence/

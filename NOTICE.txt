@@ -1,0 +1,32 @@
+MDriveHealth
+Copyright (C) 2026 Maclife community.
+Project-specific code and icon: GPL-3.0-or-later. See LICENSE.
+This software is provided without warranty, as described in that license.
+
+smartmontools drive database (third_party/drivedb.h)
+Copyright (C) 2003-11 Philip Williams, Bruce Allen.
+Copyright (C) 2008-25 Christian Franke.
+SPDX-License-Identifier: GPL-2.0-or-later.
+The bundled drivedb.json is converted from the included drivedb.h with
+tools/convert_drivedb.py. Its defaults, entries and firmware fixes have
+been checked against that source; the generated date is informational.
+The macOS USB-bridge entries are excluded by the converter.
+
+smartmontools macOS NVMe interface
+The UUIDs and interface declarations in CSMART.c/CSMART.h are adapted from
+smartmontools os_darwin.h, with project-specific names and data structures.
+The original port revision was not recorded. The RELEASE_7_5 header is a
+reference for checking these declarations, not a claim about that revision.
+Preserved upstream authors/notices are in third_party/SMARTMONTOOLS-NOTICE.txt.
+
+smartmontools home: https://www.smartmontools.org
+Upstream reference: https://github.com/smartmontools/smartmontools/tree/RELEASE_7_5/smartmontools
+Upstream license text: third_party/COPYING.smartmontools (GPL version 2).
+GPL-2.0-or-later components are conveyed in this combined project under
+GPL-3.0-or-later; their upstream copyright and license notices remain.
+
+The release packager embeds CorrespondingSource.zip in the app Resources
+and includes the same archive beside the app in the DMG. It contains the
+exact source snapshot, resources, third-party sources, tests and build
+scripts used by that packaging run. Settings can reveal the bundled archive.
+Signed/notarized packaging is not a certification of hardware or OS support.

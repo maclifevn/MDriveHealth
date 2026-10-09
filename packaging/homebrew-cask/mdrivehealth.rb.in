@@ -1,0 +1,24 @@
+# Generated from the final release manifest; see RELEASE.md. GPL-3.0-or-later.
+cask "mdrivehealth" do
+  version "@VERSION@"
+  sha256 "@SHA256@"
+
+  url "https://github.com/maclifevn/MDriveHealth/releases/download/v#{version}/MDriveHealth-#{version}.dmg"
+  name "MDriveHealth"
+  desc "Drive and system health monitor with SMART and storage tests"
+  homepage "https://github.com/maclifevn/MDriveHealth"
+
+  livecheck do
+    url :url
+    strategy :github_latest
+  end
+
+  depends_on macos: :@MACOS_SYMBOL@
+
+  app "MDriveHealth.app"
+
+  zap trash: [
+    "~/Library/Application Support/MDriveHealth",
+    "~/Library/Preferences/com.maclife.MDriveHealth.plist",
+  ]
+end

@@ -1,0 +1,6 @@
+{
+  "sonoma-arm64": {"runner": "macos-14", "macOSMajor": "14", "architecture": "arm64", "developerDirectory": "/Applications/Xcode_16.2.app/Contents/Developer", "xcodeVersion": "16.2", "xcodeBuild": "16C5032a", "macOSSDK": "15.2", "xcodeGenVersion": "2.46.0"},
+  "sequoia-arm64": {"runner": "macos-15", "macOSMajor": "15", "architecture": "arm64", "developerDirectory": "/Applications/Xcode_16.4.app/Contents/Developer", "xcodeVersion": "16.4", "xcodeBuild": "16F6", "macOSSDK": "15.5", "xcodeGenVersion": "2.46.0"},
+  "sequoia-intel": {"runner": "macos-15-intel", "macOSMajor": "15", "architecture": "x86_64", "developerDirectory": "/Applications/Xcode_16.4.app/Contents/Developer", "xcodeVersion": "16.4", "xcodeBuild": "16F6", "macOSSDK": "15.5", "xcodeGenVersion": "2.46.0"},
+  "latest-arm64": {"runner": "xcode-27", "macOSMajor": "27", "architecture": "arm64", "developerDirectory": "/Applications/Xcode_27.app/Contents/Developer", "xcodeVersion": "27.0", "xcodeBuild": "27A266a", "macOSSDK": "27.0", "xcodeGenVersion": "2.46.0"}
+}

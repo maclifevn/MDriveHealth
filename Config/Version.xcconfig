@@ -1,0 +1,4 @@
+// Single app/helper release version. GPL-3.0-or-later.
+MARKETING_VERSION = 0.1.2
+CURRENT_PROJECT_VERSION = 4
+MACOSX_DEPLOYMENT_TARGET = 14.0

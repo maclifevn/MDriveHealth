@@ -1,0 +1,20 @@
+smartmontools references used by MDriveHealth
+
+Drive database: drivedb.h
+Copyright (C) 2003-11 Philip Williams, Bruce Allen.
+Copyright (C) 2008-25 Christian Franke.
+GPL-2.0-or-later; original header notices retained in drivedb.h.
+
+Darwin interface reference: os_darwin.reference.h
+Copyright (C) 2004-8 Geoff Keating <geoffk@geoffk.org>.
+GPL-2.0-or-later; copied unmodified from smartmontools RELEASE_7_5.
+URL: https://raw.githubusercontent.com/smartmontools/smartmontools/RELEASE_7_5/smartmontools/os_darwin.h
+SHA256: da76e59e2555b6fcd956c31caca0b83885a4b1ce2809f299747dac46b15a10f6
+The original CSMART port revision was not recorded; this reference does
+not establish that original revision. The two UUID byte sequences and
+vtable declarations match the project-specific adaptation.
+
+License text: COPYING.smartmontools, unmodified upstream GPL version 2.
+Project-specific modifications are conveyed under GPL-3.0-or-later.
+The exact converted database and conversion script accompany binary
+releases as part of the embedded corresponding-source archive.

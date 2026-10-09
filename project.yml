@@ -1,0 +1,137 @@
+name: MDriveHealth
+options:
+  bundleIdPrefix: com.maclife
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  developmentLanguage: vi
+
+packages:
+  MDriveHealthCore:
+    path: Packages/MDriveHealthCore
+
+targets:
+  MDriveHealth:
+    type: application
+    platform: macOS
+    sources:
+      - App
+      - path: LICENSE
+        buildPhase: resources
+      - path: NOTICE.txt
+        buildPhase: resources
+      - path: third_party/COPYING.smartmontools
+        buildPhase: resources
+    configFiles:
+      Debug: Config/Version.xcconfig
+      Release: Config/Version.xcconfig
+    dependencies:
+      - package: MDriveHealthCore
+        product: MDriveHealthCore
+      - target: MDriveHealthWorker
+        link: false
+        embed: true
+        copy:
+          destination: executables
+        codeSign: true
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: MDriveHealth
+        CFBundleDevelopmentRegion: vi
+        CFBundleIconFile: AppIcon
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        LSApplicationCategoryType: public.app-category.utilities
+        NSHumanReadableCopyright: "© 2026 Maclife community — GPL-3.0-or-later"
+        LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
+        # Notification taps resolve an opaque stable key: mdrivehealth://drive?key=<identity>
+        CFBundleURLTypes:
+          - CFBundleURLName: com.maclife.MDriveHealth
+            CFBundleURLSchemes: [mdrivehealth]
+        # First write to an external volume root during a benchmark may prompt.
+        NSRemovableVolumesUsageDescription: "MDriveHealth ghi một file tạm thời để đo tốc độ đọc/ghi của ổ, rồi tự xoá."
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.maclife.MDriveHealth
+        SWIFT_VERSION: "5.9"
+        # SMART IOKit plug-ins are unavailable to sandboxed processes, so the
+        # app ships outside the App Store without the sandbox.
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_STYLE: Automatic
+        DEAD_CODE_STRIPPING: YES
+
+  MDriveHealthWorker:
+    type: tool
+    platform: macOS
+    sources:
+      - Packages/MDriveHealthCore/Sources/mdrivehealth-worker
+    dependencies:
+      - package: MDriveHealthCore
+        product: MDriveHealthCore
+    configFiles:
+      Debug: Config/Version.xcconfig
+      Release: Config/Version.xcconfig
+    settings:
+      base:
+        SWIFT_VERSION: "5.9"
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_STYLE: Automatic
+        SKIP_INSTALL: YES
+
+  MDriveHealthModelTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - AppTests
+      - App/Models/DriveStore.swift
+      - App/Models/BenchmarkRunner.swift
+      - App/Models/DriveServices.swift
+      - App/Models/DriveOperations.swift
+      - App/Models/CapacityVerifyRunner.swift
+      - App/Models/MeasurementServices.swift
+      - App/Models/MeasurementRecoveryController.swift
+      - App/Models/WorkspaceRecoveryController.swift
+      - App/Models/ApplicationLifecycle.swift
+      - App/Models/ApplicationDelegate.swift
+      - App/Views/LifecycleStatusView.swift
+      - App/Views/WorkspaceRecoveryView.swift
+      - App/Views/MeasurementHistoryView.swift
+      - App/Models/MonitoringController.swift
+      - App/Models/NotificationDelivery.swift
+      - App/Models/SelfTestController.swift
+      - App/Models/HealthDisplay.swift
+      - App/Models/StatusPalette.swift
+      - App/Models/RiskAdvisor.swift
+      - App/Views/Components.swift
+      - App/Views/ShareCards.swift
+      - App/Models/MenuBarStatus.swift
+      - App/Models/BenchmarkDisplay.swift
+      - App/Models/HistoryChartData.swift
+      - App/Models/SemanticVersion.swift
+      - App/Models/UpdateChecker.swift
+      - App/Models/UpdateCheckController.swift
+      - App/Models/SidebarSelection.swift
+      - App/Views/UpdateCheckView.swift
+      - App/Models/LoginItemController.swift
+      - App/Views/LoginItemControl.swift
+      - App/Views/OnboardingView.swift
+    dependencies:
+      - package: MDriveHealthCore
+        product: MDriveHealthCore
+    settings:
+      base:
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGNING_ALLOWED: NO
+
+schemes:
+  MDriveHealth:
+    build:
+      targets:
+        MDriveHealth: all
+        MDriveHealthModelTests: [test]
+    test:
+      targets: [MDriveHealthModelTests]
+      gatherCoverageData: true
