@@ -23,7 +23,8 @@ let package = Package(
             dependencies: ["CSMART"],
             resources: [
                 .copy("Resources/drivedb.json"),
-                .process("Resources/Localizable.xcstrings"),
+                .process("Resources/en.lproj"),
+                .process("Resources/vi.lproj"),
             ]
         ),
         .executableTarget(
