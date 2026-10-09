@@ -71,8 +71,10 @@ struct DeviceInfoTab: View {
         if snapshot.drive.isSolidState {
             let value: String
             switch trimSupport {
-            case true: value = String(localized: "trim.reportedYes", defaultValue: "Có hỗ trợ")
-            case false: value = String(localized: "trim.reportedNo", defaultValue: "Không hỗ trợ")
+            case .some(let supported):
+                value = supported
+                    ? String(localized: "trim.reportedYes", defaultValue: "Có hỗ trợ")
+                    : String(localized: "trim.reportedNo", defaultValue: "Không hỗ trợ")
             case nil: value = String(localized: "trim.unknown", defaultValue: "Chưa xác định / không được báo cáo")
             }
             result.append(("TRIM/Deallocate (macOS)", value))
