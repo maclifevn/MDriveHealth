@@ -189,7 +189,7 @@ final class WorkspaceRecoveryTests: XCTestCase {
     func testManifestChangeRequiresNewProofAndCannotGuessNames() throws {
         let path = try killFixture("filled"), found = try entry()
         try replaceManifest(path) { data in
-            var lines = data.split(separator: 10).map(Data.init)
+            var lines: [Data] = data.split(separator: 10)
             guard case .header(let h) = try JSONDecoder().decode(WorkspaceRecord.self, from: lines[0]) else { throw WorkspaceRecoveryError.changed }
             lines[0] = try JSONEncoder().encode(WorkspaceRecord.header(.init(version: h.version, id: h.id, nonce: UUID(), createdAt: h.createdAt, filesystem: h.filesystem, directory: h.directory, manifest: h.manifest)))
             return lines.reduce(into: Data()) { $0.append($1); $0.append(10) }
@@ -223,7 +223,7 @@ final class WorkspaceRecoveryTests: XCTestCase {
     }
     func testMalformedDuplicatedAndForeignFilesystemRecordsFailClosed() throws {
         let path = try killFixture("filled"), original = try Data(contentsOf: manifest(path))
-        var lines = original.split(separator: 10).map(Data.init)
+        var lines: [Data] = original.split(separator: 10)
         try replaceManifest(path) { _ in lines.reduce(into: Data()) { $0.append($1); $0.append(10) } + lines[1] + Data([10]) }
         XCTAssertEqual(try entry().status, .unverified)
         guard case .header(let h) = try JSONDecoder().decode(WorkspaceRecord.self, from: lines[0]) else { return XCTFail("header") }
@@ -273,7 +273,7 @@ final class WorkspaceRecoveryTests: XCTestCase {
     func testMatchingVolumeUUIDAllowsFilesystemRemountMetadataToChange() throws {
         let path = try killFixture("filled")
         try replaceManifest(path) { original in
-            var lines = original.split(separator: 10).map(Data.init)
+            var lines: [Data] = original.split(separator: 10)
             guard case .header(let h) = try JSONDecoder().decode(WorkspaceRecord.self, from: lines[0]) else { throw WorkspaceRecoveryError.changed }
             XCTAssertNotNil(h.filesystem.volumeUUID)
             let remounted = MountedFilesystemIdentity(filesystemID: "previous-fsid", mountedFrom: "/dev/disk999s1", mountedAt: "/Volumes/Previous", volumeUUID: h.filesystem.volumeUUID)
