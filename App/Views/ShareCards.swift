@@ -23,8 +23,23 @@ extension EnvironmentValues {
 enum ShareCardRenderer {
     static func pngURL(for view: some View, name: String, directory: URL = FileManager.default.temporaryDirectory) -> URL? {
         let renderer = ImageRenderer(content: view.environment(\.colorScheme, .light))
-        renderer.scale = 2
-        guard let cgImage = renderer.cgImage else { return nil }
+        let scale: CGFloat = 2
+        var image: CGImage?
+        // Draw into a CPU bitmap; the default snapshot path can abort in
+        // Metal when a virtual Intel GPU has no supported device architecture.
+        renderer.render(rasterizationScale: scale) { size, draw in
+            guard let width = Int(exactly: (size.width * scale).rounded(.up)),
+                  let height = Int(exactly: (size.height * scale).rounded(.up)),
+                  width > 0, height > 0,
+                  let space = CGColorSpace(name: CGColorSpace.sRGB),
+                  let bitmap = CGContext(data: nil, width: width, height: height,
+                      bitsPerComponent: 8, bytesPerRow: 0, space: space,
+                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return }
+            bitmap.scaleBy(x: scale, y: scale)
+            draw(bitmap)
+            image = bitmap.makeImage()
+        }
+        guard let cgImage = image else { return nil }
         let rep = NSBitmapImageRep(cgImage: cgImage)
         guard let data = rep.representation(using: .png, properties: [:]) else { return nil }
         // Unique per render — a fixed name would silently overwrite another

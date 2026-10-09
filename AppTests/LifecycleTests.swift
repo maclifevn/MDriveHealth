@@ -290,7 +290,7 @@ final class LifecycleTests: XCTestCase {
         XCTAssertEqual(h.lifecycle.kind, .relaunch); XCTAssertFalse(h.benchmark.unsavedResults.isEmpty)
     }
     private func childWorker() throws -> SystemMeasurements {
-        let runner = String(decoding: try BoundedProcess.run(ProcessCommand("/usr/bin/xcrun", ["--find", "xctest"], timeout: 5)).requireSuccess(), as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        let runner = String(decoding: try BoundedProcess.run(ProcessCommand("/usr/bin/xcrun", ["--sdk", "macosx", "--find", "xctest"], timeout: 5)).requireSuccess(), as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
         // A fresh xctest host must not join the parent's Xcode test session
         // or inherit its bundle-injection library. Keep loader search paths.
         let injected = ProcessInfo.processInfo.environment.keys.filter {

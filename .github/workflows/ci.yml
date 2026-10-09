@@ -46,6 +46,8 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+      - name: Select pinned Xcode for test child processes
+        run: sudo xcode-select --switch "$DEVELOPER_DIR"
       - name: Install checksum-pinned XcodeGen
         run: |
           python3 scripts/install_ci_tools.py "$RUNNER_TEMP/mdrivehealth-tools"

@@ -62,7 +62,7 @@ final class MeasurementPersistenceTests: XCTestCase {
         return (store, .init(drive: drive, volumes: [volume]), gate)
     }
     private func worker(_ mode: String = "normal") throws -> SystemMeasurements {
-        let output = try BoundedProcess.run(ProcessCommand("/usr/bin/xcrun", ["--find","xctest"], timeout: 5, scope: "persistence-test-runner")).requireSuccess()
+        let output = try BoundedProcess.run(ProcessCommand("/usr/bin/xcrun", ["--sdk", "macosx", "--find", "xctest"], timeout: 5, scope: "persistence-test-runner")).requireSuccess()
         let executable = String(decoding: output, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
         let injected = ProcessInfo.processInfo.environment.keys.filter {
             $0.hasPrefix("XCTest") || $0.hasPrefix("XCInject") || $0 == "DYLD_INSERT_LIBRARIES"

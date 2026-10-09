@@ -87,6 +87,23 @@ final class StatusPaletteTests: XCTestCase {
             XCTAssertEqual(Double(actual), wanted, accuracy: 0.01)
         }
     }
+
+    func testPNGRendererPreservesVerticalOrderAndDoubleScale() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("MDriveHealth-png-order-\(UUID())")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let view = VStack(spacing: 0) {
+            Color(.sRGB, red: 1, green: 0, blue: 0).frame(width: 24, height: 12)
+            Color(.sRGB, red: 0, green: 0, blue: 1).frame(width: 24, height: 12)
+        }
+        let url = try XCTUnwrap(ShareCardRenderer.pngURL(for: view, name: "order", directory: directory))
+        let bitmap = try XCTUnwrap(NSBitmapImageRep(data: Data(contentsOf: url)))
+        XCTAssertEqual(bitmap.pixelsWide, 48); XCTAssertEqual(bitmap.pixelsHigh, 48)
+        let top = try XCTUnwrap(bitmap.colorAt(x: 24, y: 12))
+        let bottom = try XCTUnwrap(bitmap.colorAt(x: 24, y: 36))
+        XCTAssertEqual(top.redComponent, 1, accuracy: 0.01); XCTAssertEqual(top.blueComponent, 0, accuracy: 0.01)
+        XCTAssertEqual(bottom.redComponent, 0, accuracy: 0.01); XCTAssertEqual(bottom.blueComponent, 1, accuracy: 0.01)
+    }
 }
 
 private struct ExportPaletteProbe: View {
