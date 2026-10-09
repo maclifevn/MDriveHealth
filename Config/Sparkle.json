@@ -1,0 +1,8 @@
+{
+  "version": "2.10.0",
+  "binarySHA256": "17e28312b8e18ab7cdbbe09a6fb28cc55a5479ec6c371dbc07cdecd2a14fd959",
+  "keychainAccount": "com.maclife.MDriveHealth",
+  "repository": "maclifevn/MDriveHealth",
+  "feedURL": "https://github.com/maclifevn/MDriveHealth/releases/latest/download/appcast.xml",
+  "publicKey": "qWMVbSYhDiZY6RFglIF7EPsI/uaxN0f2L6Y1yTDSpFg="
+}

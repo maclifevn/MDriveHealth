@@ -6,6 +6,36 @@ from pathlib import Path
 ROOT_FILES = ['LICENSE', 'NOTICE.txt', 'README.md', 'RELEASE.md', 'project.yml', '.gitignore']
 ROOT_DIRS = ['App', 'AppTests', 'Packages', 'Config', 'third_party', 'tools', 'scripts', 'packaging', '.github']
 EXCLUDED = {'.build', '.swiftpm', '.DS_Store', 'xcuserdata', '__pycache__'}
+SPARKLE_BINARIES = ['Versions/B/Sparkle', 'Versions/B/Autoupdate',
+                    'Versions/B/Updater.app/Contents/MacOS/Updater',
+                    'Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader',
+                    'Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer']
+SPARKLE_LINKS = {name: 'Versions/Current/' + name for name in
+                 ['Autoupdate', 'Headers', 'Modules', 'PrivateHeaders', 'Resources', 'Sparkle', 'Updater.app', 'XPCServices']}
+SPARKLE_LINKS['Versions/Current'] = 'B'
+
+def verify_sparkle(app, config):
+    framework = app / 'Contents/Frameworks/Sparkle.framework'
+    info = plistlib.loads((framework / 'Versions/B/Resources/Info.plist').read_bytes())
+    if info.get('CFBundleIdentifier') != 'org.sparkle-project.Sparkle' or info.get('CFBundleShortVersionString') != config['version']:
+        raise ValueError('Unexpected Sparkle framework version/identity')
+    for path in framework.rglob('*'):
+        if path.is_symlink():
+            relative = path.relative_to(framework).as_posix()
+            if SPARKLE_LINKS.get(relative) != str(path.readlink()) or not path.resolve(strict=True).is_relative_to(framework.resolve()):
+                raise ValueError('Unexpected Sparkle symlink: ' + relative)
+    for name in SPARKLE_BINARIES:
+        if set(run('lipo', '-archs', str(framework / name)).split()) != {'arm64', 'x86_64'}:
+            raise ValueError('Expected universal Sparkle executable: ' + name)
+    return framework
+
+def sign_sparkle(app, identity):
+    framework = app / 'Contents/Frameworks/Sparkle.framework'
+    # Sign nested bundles before their enclosing framework. Keep Sparkle's XPC sandbox entitlements.
+    for relative in ['Versions/B/XPCServices/Downloader.xpc', 'Versions/B/XPCServices/Installer.xpc',
+                     'Versions/B/Updater.app', 'Versions/B/Autoupdate', '.']:
+        subprocess.run(['codesign', '--force', '--sign', identity, '--timestamp', '--options', 'runtime',
+                        '--preserve-metadata=entitlements', str(framework / relative)], check=True)
 
 def digest(path): return hashlib.sha256(path.read_bytes()).hexdigest()
 def run(*args): return subprocess.check_output(args, text=True, stderr=subprocess.STDOUT).strip()
@@ -136,9 +166,20 @@ def verify_app(app, archive, sdk, output):
         prefix = 'MDriveHealth-' + manifest['version'] + '-source/'
         for name, relative in [('LICENSE', 'LICENSE'), ('NOTICE.txt', 'NOTICE.txt'), ('COPYING.smartmontools', 'third_party/COPYING.smartmontools')]:
             if (resources / name).read_bytes() != container.read(prefix + relative): raise ValueError('Bundle legal text mismatch: ' + name)
+        sparkle = None
+        if 'Config/Sparkle.json' in manifest['files']:
+            sparkle = json.loads(container.read(prefix + 'Config/Sparkle.json'))
+            if (resources / 'COPYING.Sparkle').read_bytes() != container.read(prefix + 'third_party/COPYING.Sparkle'):
+                raise ValueError('Bundle Sparkle legal text mismatch')
     with (app / 'Contents/Info.plist').open('rb') as file: info = plistlib.load(file)
     if info.get('CFBundleIdentifier') != 'com.maclife.MDriveHealth' or (info.get('CFBundleShortVersionString'), info.get('CFBundleVersion')) != (manifest['version'], manifest['build']): raise ValueError('Packaged app identity/version mismatch')
     if info.get('LSMinimumSystemVersion') != manifest['minimumMacOS']: raise ValueError('App minimum OS differs from source configuration')
+    framework = verify_sparkle(app, sparkle) if sparkle else None
+    if sparkle:
+        required = dict(SUFeedURL=sparkle['feedURL'], SUPublicEDKey=sparkle['publicKey'],
+                        SUVerifyUpdateBeforeExtraction=True, SURequireSignedFeed=True,
+                        SUSignedFeedFailureExpirationInterval=0, SUEnableSystemProfiling=False)
+        if any(info.get(key) != value for key, value in required.items()): raise ValueError('Sparkle update configuration mismatch')
     metadata = json.loads((resources / 'ReleaseSource.json').read_text())
     if metadata != dict(version=manifest['version'], build=manifest['build'], minimumMacOS=manifest['minimumMacOS'], sha256=digest(archive)): raise ValueError('Source metadata mismatch')
     binaries = {}
@@ -150,10 +191,14 @@ def verify_app(app, archive, sdk, output):
         binaries[name] = {'sha256': digest(binary), 'architectures': sorted(archs), 'buildCommands': commands}
     magic = {b'\xcf\xfa\xed\xfe', b'\xfe\xed\xfa\xcf', b'\xca\xfe\xba\xbe', b'\xbe\xba\xfe\xca', b'\xca\xfe\xba\xbf'}
     for path in app.rglob('*'):
-        if path.is_symlink(): raise ValueError('Unexpected bundle symlink: ' + str(path))
+        if path.is_symlink():
+            if framework is not None and path.is_relative_to(framework): continue
+            raise ValueError('Unexpected bundle symlink: ' + str(path))
         if path.is_file():
             with path.open('rb') as file: header = file.read(4)
-            if header in magic and path.relative_to(app).as_posix() not in ['Contents/MacOS/MDriveHealth', 'Contents/MacOS/MDriveHealthWorker']: raise ValueError('Unexpected nested executable: ' + str(path))
+            allowed = ['Contents/MacOS/MDriveHealth', 'Contents/MacOS/MDriveHealthWorker']
+            if sparkle: allowed += ['Contents/Frameworks/Sparkle.framework/' + name for name in SPARKLE_BINARIES]
+            if header in magic and path.relative_to(app).as_posix() not in allowed: raise ValueError('Unexpected nested executable: ' + str(path))
     report = {'version': manifest['version'], 'build': manifest['build'], 'minimumMacOS': manifest['minimumMacOS'], 'sourceSHA256': digest(archive), 'binaries': binaries,
               'runtimeAcceptance': 'UNVERIFIED: structural validation does not prove minimum OS, UI or hardware support'}
     output.write_text(json.dumps(report, indent=2) + '\n'); return report
@@ -193,6 +238,7 @@ def main():
     p = sub.add_parser('seal'); p.add_argument('root', type=Path); p.add_argument('archive', type=Path)
     p = sub.add_parser('verify-source'); p.add_argument('archive', type=Path); p.add_argument('--root', type=Path)
     p = sub.add_parser('embed'); p.add_argument('app', type=Path); p.add_argument('archive', type=Path)
+    p = sub.add_parser('sign-sparkle'); p.add_argument('app', type=Path); p.add_argument('identity')
     p = sub.add_parser('verify-app'); p.add_argument('app', type=Path); p.add_argument('archive', type=Path); p.add_argument('sdk'); p.add_argument('output', type=Path)
     p = sub.add_parser('verify-dmg'); p.add_argument('dmg', type=Path); p.add_argument('app', type=Path); p.add_argument('archive', type=Path); p.add_argument('sdk'); p.add_argument('output', type=Path)
     args = parser.parse_args()
@@ -203,6 +249,7 @@ def main():
         elif args.command == 'seal': seal(args.root, args.archive)
         elif args.command == 'verify-source': print(json.dumps(verify_source(args.archive, args.root)))
         elif args.command == 'embed': embed(args.app, args.archive)
+        elif args.command == 'sign-sparkle': sign_sparkle(args.app, args.identity)
         elif args.command == 'verify-app': verify_app(args.app, args.archive, args.sdk, args.output)
         elif args.command == 'verify-dmg': verify_dmg(args.dmg, args.app, args.archive, args.sdk, args.output)
     except (OSError, ValueError, KeyError, zipfile.BadZipFile, subprocess.CalledProcessError) as error: parser.exit(1, 'Release validation failed: ' + str(error) + '\n')

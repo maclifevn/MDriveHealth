@@ -23,13 +23,20 @@ With a Developer ID Application identity and stored notarytool credentials:
 scripts/release.sh "Developer ID Application: Your Name (TEAMID)" mdrivehealth
 ```
 
-The helper is signed before the app. Verification uses `--deep --strict`;
+Sparkle's nested helpers, its framework and the measurement helper are signed
+before the app. Verification uses `--deep --strict`;
 recursive signing with `--deep` is not used. The pipeline checks accepted
 notary JSON, validates staples and saves Gatekeeper results for app and DMG.
 Source/notice resources are installed before signing. These steps have not
 yet been accepted with this project's production signing credentials.
 [Apple's signing guidance](https://developer.apple.com/library/archive/technotes/tn2206/_index.html)
 explains signing order and bundle integrity.
+
+The signed release path generates and verifies **`appcast.xml`** using the
+Sparkle key in Keychain account `com.maclife.MDriveHealth`. Publish this feed
+with the matching DMG, source ZIP and checksums in every stable GitHub release.
+Increase the build number on each release. See [Sparkle setup and publishing](packaging/SPARKLE.md).
+Unsigned rehearsals omit the public feed. Nothing is uploaded by the script.
 
 Every binary release includes `LICENSE`, `NOTICE.txt`, upstream GPL text,
 and the exact corresponding-source archive both in the app Resources and

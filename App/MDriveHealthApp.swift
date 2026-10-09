@@ -17,6 +17,7 @@ struct MDriveHealthApp: App {
     @State private var capacityVerify: CapacityVerifyRunner
     @State private var lifecycle: ApplicationLifecycle
     @State private var loginItems: LoginItemController
+    @StateObject private var updater: SparkleUpdateController
     @AppStorage(SettingsKeys.showMenuBar) private var showMenuBar = true
     @AppStorage(SettingsKeys.menuBarDisplay) private var menuBarDisplay = MenuBarDisplay.icon
 
@@ -35,7 +36,10 @@ struct MDriveHealthApp: App {
         _monitor = State(initialValue: monitor); _benchmark = State(initialValue: benchmark)
         _capacityVerify = State(initialValue: capacity); _lifecycle = State(initialValue: lifecycle)
         _loginItems = State(initialValue: loginItems)
+        let updater = SparkleUpdateController()
+        _updater = StateObject(wrappedValue: updater)
         appDelegate.configure(lifecycle)
+        updater.prepareInstallation = appDelegate.prepareForUpdate
         store.measurementRecovery.start()
     }
 
@@ -50,11 +54,18 @@ struct MDriveHealthApp: App {
                 .environment(loginItems)
                 .frame(minWidth: 860, minHeight: 560)
                 .task {
+                    updater.start()
                     await monitor.start()
                     await store.refresh()
                 }
         }
         .windowToolbarStyle(.unified)
+        .commands {
+            CommandGroup(after: .appInfo) {
+                Button("Kiểm tra bản cập nhật…", action: updater.checkForUpdates)
+                    .disabled(!updater.canCheckForUpdates || updater.startupError != nil)
+            }
+        }
 
         MenuBarExtra(isInserted: $showMenuBar) {
             MenuBarView()
@@ -65,7 +76,7 @@ struct MDriveHealthApp: App {
         .menuBarExtraStyle(.window)
 
         Settings {
-            SettingsView(history: store.history)
+            SettingsView(history: store.history, updater: updater)
                 .environment(monitor)
                 .environment(lifecycle)
                 .environment(loginItems)

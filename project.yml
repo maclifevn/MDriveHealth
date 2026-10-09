@@ -9,6 +9,9 @@ options:
 packages:
   MDriveHealthCore:
     path: Packages/MDriveHealthCore
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: 2.10.0
 
 targets:
   MDriveHealth:
@@ -22,12 +25,16 @@ targets:
         buildPhase: resources
       - path: third_party/COPYING.smartmontools
         buildPhase: resources
+      - path: third_party/COPYING.Sparkle
+        buildPhase: resources
     configFiles:
       Debug: Config/Version.xcconfig
       Release: Config/Version.xcconfig
     dependencies:
       - package: MDriveHealthCore
         product: MDriveHealthCore
+      - package: Sparkle
+        product: Sparkle
       - target: MDriveHealthWorker
         link: false
         embed: true
@@ -51,6 +58,15 @@ targets:
             CFBundleURLSchemes: [mdrivehealth]
         # First write to an external volume root during a benchmark may prompt.
         NSRemovableVolumesUsageDescription: "MDriveHealth ghi một file tạm thời để đo tốc độ đọc/ghi của ổ, rồi tự xoá."
+        SUFeedURL: https://github.com/maclifevn/MDriveHealth/releases/latest/download/appcast.xml
+        SUPublicEDKey: qWMVbSYhDiZY6RFglIF7EPsI/uaxN0f2L6Y1yTDSpFg=
+        SUEnableAutomaticChecks: true
+        SUAutomaticallyUpdate: false
+        SUScheduledCheckInterval: 86400
+        SUEnableSystemProfiling: false
+        SUVerifyUpdateBeforeExtraction: true
+        SURequireSignedFeed: true
+        SUSignedFeedFailureExpirationInterval: 0
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.maclife.MDriveHealth
@@ -112,6 +128,8 @@ targets:
       - App/Models/SemanticVersion.swift
       - App/Models/UpdateChecker.swift
       - App/Models/UpdateCheckController.swift
+      - App/Models/SparkleUpdateController.swift
+      - App/Views/SparkleUpdateSettingsView.swift
       - App/Models/SidebarSelection.swift
       - App/Views/UpdateCheckView.swift
       - App/Models/LoginItemController.swift
@@ -120,6 +138,8 @@ targets:
     dependencies:
       - package: MDriveHealthCore
         product: MDriveHealthCore
+      - package: Sparkle
+        product: Sparkle
     settings:
       base:
         SWIFT_VERSION: "5.9"

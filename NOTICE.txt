@@ -30,3 +30,10 @@ and includes the same archive beside the app in the DMG. It contains the
 exact source snapshot, resources, third-party sources, tests and build
 scripts used by that packaging run. Settings can reveal the bundled archive.
 Signed/notarized packaging is not a certification of hardware or OS support.
+
+Sparkle 2.10.0 provides signed application updates.
+Copyright notices and its MIT/BSD/Ed25519 license texts are preserved in
+third_party/COPYING.Sparkle and the bundled COPYING.Sparkle resource.
+Upstream: https://github.com/sparkle-project/Sparkle/tree/2.10.0
+The unmodified binary framework is resolved through Swift Package Manager
+using the exact release version and the upstream archive checksum.

@@ -24,7 +24,9 @@ def main():
         (package/Path(name).relative_to('Packages/MDriveHealthCore')).write_bytes(data)
     manifest=package/'Package.swift'; text=manifest.read_text(); anchor='        .testTarget('
     assert text.count(anchor)==1
-    manifest.write_text(text.replace(anchor,'        .executableTarget(name: "FullWindowNativeFixture", dependencies: ["MDriveHealthCore"]),\n'+anchor))
+    assert text.count('    targets: [')==1
+    text=text.replace('    targets: [','    dependencies: [.package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.0")],\n    targets: [')
+    manifest.write_text(text.replace(anchor,'        .executableTarget(name: "FullWindowNativeFixture", dependencies: ["MDriveHealthCore", .product(name: "Sparkle", package: "Sparkle")]),\n'+anchor))
     target=package/'Sources/FullWindowNativeFixture';target.mkdir()
     for p in [p for p in inputs if p.suffix=='.swift']:
         text=captured[str(p.relative_to(root))].decode('utf-8')
@@ -37,6 +39,11 @@ def main():
     build=Path(subprocess.check_output(['swift','build','--package-path',str(package),'--show-bin-path'],text=True).strip())
     app=out/'FullWindowNativeFixture.app';exe=app/'Contents/MacOS/FullWindowNativeFixture';res=app/'Contents/Resources'
     exe.parent.mkdir(parents=True);res.mkdir();shutil.copy2(build/exe.name,exe)
+    frameworks=app/'Contents/Frameworks';frameworks.mkdir()
+    sparkle=package/'.build/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework'
+    subprocess.run(['ditto',str(sparkle),str(frameworks/'Sparkle.framework')],check=True)
+    subprocess.run(['install_name_tool','-add_rpath','@executable_path/../Frameworks',str(exe)],check=True)
+    subprocess.run(['codesign','--force','--sign','-',str(exe)],check=True)
     for bundle in build.glob('*.bundle'):shutil.copytree(bundle,res/bundle.name)
     metadata=dict(CFBundleExecutable=exe.name,CFBundleIdentifier='com.maclife.mdrivehealth.full-window-fixture',CFBundlePackageType='APPL',CFBundleName='MDriveHealth UI fixture',CFBundleDevelopmentRegion='vi',CFBundleShortVersionString='0.1.2',CFBundleVersion='3',NSHighResolutionCapable=True)
     (app/'Contents/Info.plist').write_bytes(plistlib.dumps(metadata))

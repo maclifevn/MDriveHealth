@@ -9643,6 +9643,91 @@
           }
         }
       }
+    },
+    "update.settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cập nhật ứng dụng"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App updates"
+          }
+        }
+      }
+    },
+    "update.automaticChecks": {
+      "extractionState": "manual",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tự động kiểm tra bản cập nhật"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatically check for updates"
+          }
+        }
+      }
+    },
+    "update.automaticDownloads": {
+      "extractionState": "manual",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tự động tải và cài đặt khi thoát app"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download automatically and install on quit"
+          }
+        }
+      }
+    },
+    "update.automaticHelp": {
+      "extractionState": "manual",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kiểm tra mỗi ngày. Bản cập nhật được xác minh chữ ký trước khi cài; app chờ hoàn tất dọn file và lưu kết quả rồi mới thoát."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checks daily. Updates are signature-verified before installation; the app finishes cleanup and saves results before quitting."
+          }
+        }
+      }
+    },
+    "update.configurationError": {
+      "extractionState": "manual",
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bản build này chưa có cấu hình cập nhật hợp lệ."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This build does not have a valid update configuration."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

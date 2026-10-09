@@ -29,6 +29,7 @@
 | **Xuất báo cáo text** (copy/lưu file) để đăng lên group khi cần trợ giúp | **Text report export** (copy/save) for sharing when asking for help |
 | **System Health**: pin (chu kỳ, % sức khoẻ), ~40 cảm biến nhiệt Apple Silicon, RAM/swap/áp lực bộ nhớ | **System Health**: battery (cycles, health %), ~40 Apple Silicon thermal sensors, RAM/swap/memory pressure |
 | Giao diện tiếng Việt + English | Vietnamese + English UI |
+| **Cập nhật qua Sparkle**: kiểm tra mỗi ngày, tải/cài có chữ ký; tùy chọn tự cài khi thoát app | **Sparkle updates**: daily checks, signed download/installation, optional automatic installation on quit |
 
 ## An toàn ghi thử / Write test safety
 

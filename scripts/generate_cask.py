@@ -19,10 +19,14 @@ def generate(directory, output):
     if not isinstance(version, str) or not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', version): raise ValueError('Invalid release version')
     dmg = directory / f'MDriveHealth-{version}.dmg'
     source = directory / f'MDriveHealth-{version}-source.zip'
-    for artifact in [dmg, source]:
+    artifacts = [dmg, source]
+    declared = manifest.get('artifacts')
+    if isinstance(declared, dict) and 'appcast.xml' in declared:
+        artifacts.append(directory / 'appcast.xml')
+    for artifact in artifacts:
         info = artifact.lstat()
         if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1: raise ValueError('Artifact must be a regular, unlinked file')
-    actual = {p.name: digest(p) for p in [dmg, source]}
+    actual = {p.name: digest(p) for p in artifacts}
     if manifest.get('artifacts') != actual: raise ValueError('Final artifact checksum mismatch')
     if manifest.get('dmgSHA256') != actual[dmg.name] or manifest.get('sourceSHA256') != actual[source.name]: raise ValueError('Readback checksum mismatch')
     if manifest.get('finalDiskImageReadback') != 'passed': raise ValueError('Final DMG readback is required')

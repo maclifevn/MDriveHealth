@@ -9,6 +9,7 @@ import MDriveHealthCore
     private var requestedKind: ApplicationLifecycle.Kind = .quit
     private var terminationTask: Task<Void, Never>?
     private var panel: NSPanel?
+    private var updateInstallation: (() -> Void)?
     // Internal native-boundary injection for tests; production uses AppKit.
     var terminationReply: (Bool) -> Void = { NSApp.reply(toApplicationShouldTerminate: $0) }
     var terminateRequested: () -> Void = { NSApp.terminate(nil) }
@@ -18,7 +19,28 @@ import MDriveHealthCore
         self.lifecycle = lifecycle
         lifecycle.exitRequested = { [weak self] kind in
             guard let self else { return }
+            if self.updateInstallation != nil { self.prepareUpdateInstallation(); return }
             self.requestedKind = kind; self.terminateRequested()
+        }
+    }
+    func prepareForUpdate(_ install: @escaping () -> Void) {
+        guard updateInstallation == nil else { return }
+        updateInstallation = install
+        prepareUpdateInstallation()
+    }
+    private func prepareUpdateInstallation() {
+        guard let lifecycle else { let install = updateInstallation; updateInstallation = nil; install?(); return }
+        guard terminationTask == nil else { return }
+        lifecycle.begin(.quit)
+        presentStatus(lifecycle)
+        terminationTask = Task { @MainActor [self] in
+            let allowed = await lifecycle.prepare(.quit)
+            terminationTask = nil
+            if allowed {
+                panel?.orderOut(nil)
+                let install = updateInstallation; updateInstallation = nil
+                install?()
+            } else { presentStatus(lifecycle) }
         }
     }
     func applicationDidFinishLaunching(_ notification: Notification) { UNUserNotificationCenter.current().delegate = self }
@@ -26,6 +48,10 @@ import MDriveHealthCore
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard let lifecycle else { return .terminateNow }
         if lifecycle.isReady { return .terminateNow }
+        if updateInstallation != nil {
+            prepareUpdateInstallation()
+            return .terminateCancel
+        }
         if terminationTask != nil { return .terminateLater }
         let kind = requestedKind
         lifecycle.begin(kind)
@@ -33,7 +59,11 @@ import MDriveHealthCore
         terminationTask = Task { @MainActor [self] in
             let allowed = await lifecycle.prepare(kind)
             terminationTask = nil; requestedKind = .quit
-            if allowed { panel?.orderOut(nil) } else { presentStatus(lifecycle) }
+            if allowed {
+                panel?.orderOut(nil)
+                let install = updateInstallation; updateInstallation = nil
+                install?()
+            } else { presentStatus(lifecycle) }
             terminationReply(allowed)
         }
         return .terminateLater

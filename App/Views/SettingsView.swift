@@ -8,6 +8,7 @@ import MDriveHealthCore
 
 struct SettingsView: View {
     let history: HistoryAccess
+    @ObservedObject var updater: SparkleUpdateController
     @Environment(MonitoringController.self) private var monitor
     @Environment(ApplicationLifecycle.self) private var lifecycle
     @Environment(LoginItemController.self) private var loginItems
@@ -16,7 +17,6 @@ struct SettingsView: View {
     @AppStorage(SettingsKeys.monitoringEnabled) private var monitoringEnabled = true
     @AppStorage(SettingsKeys.showMenuBar) private var showMenuBar = true
     @AppStorage(SettingsKeys.menuBarDisplay) private var menuBarDisplay = MenuBarDisplay.icon
-    @State private var updateCheck = UpdateCheckController()
     @AppStorage("appLanguage") private var appLanguage = "system"
     @State private var languageNeedsRestart = false
 
@@ -114,6 +114,10 @@ struct SettingsView: View {
                 }
             }
 
+            Section("update.settings") {
+                SparkleUpdateSettingsView(updater: updater)
+            }
+
             Section {
                 LabeledContent("Phiên bản", value: UpdateChecker.displayedVersion)
                 LabeledContent("Drive database",
@@ -135,7 +139,6 @@ struct SettingsView: View {
                     .disabled(Bundle.main.url(forResource: "CorrespondingSource", withExtension: "zip") == nil)
                     .help("release.source.help")
                 }
-                UpdateCheckView(controller: updateCheck)
             } header: {
                 Text("Về MDriveHealth")
             } footer: {
@@ -150,7 +153,6 @@ struct SettingsView: View {
         .frame(width: 440)
         .frame(minHeight: 400, idealHeight: 620, maxHeight: .infinity)
         .task { await monitor.refreshAuthorization() }
-        .onDisappear { updateCheck.cancel() }
     }
 
     /// Standard per-app language override: set AppleLanguages and relaunch.

@@ -41,5 +41,23 @@
 	<string>© 2026 Maclife community — GPL-3.0-or-later</string>
 	<key>NSRemovableVolumesUsageDescription</key>
 	<string>MDriveHealth ghi một file tạm thời để đo tốc độ đọc/ghi của ổ, rồi tự xoá.</string>
+	<key>SUAutomaticallyUpdate</key>
+	<false/>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUEnableSystemProfiling</key>
+	<false/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/maclifevn/MDriveHealth/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>qWMVbSYhDiZY6RFglIF7EPsI/uaxN0f2L6Y1yTDSpFg=</string>
+	<key>SURequireSignedFeed</key>
+	<true/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
+	<key>SUSignedFeedFailureExpirationInterval</key>
+	<integer>0</integer>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
 </dict>
 </plist>

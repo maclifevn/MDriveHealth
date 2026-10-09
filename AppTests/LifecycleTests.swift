@@ -237,6 +237,34 @@ final class LifecycleTests: XCTestCase {
         XCTAssertEqual(allowed, true); XCTAssertEqual(h.store.history.state, .closed)
         XCTAssertFalse(h.store.isRefreshing); XCTAssertTrue(h.store.operations.leases.isEmpty)
     }
+    @MainActor func testSparkleInstallationWaitsForCleanupAndDoesNotLaunchOldInstance() async throws {
+        var launches = 0, installs = 0
+        let h = LifecycleHarness(root: root, mode: .heldCleanup, launch: { launches += 1 })
+        let delegate = AppDelegate()
+        delegate.configure(h.lifecycle); delegate.statusPresented = { _ in }
+        h.startBenchmark(); try await waitForBackend(h.backend)
+        delegate.prepareForUpdate { installs += 1 }
+        try await waitUntil { h.benchmark.isCleaning }
+        XCTAssertEqual(installs, 0)
+        XCTAssertEqual(delegate.applicationShouldTerminate(NSApplication.shared), .terminateCancel)
+        await h.backend.release()
+        try await waitUntil { installs == 1 }
+        XCTAssertTrue(h.lifecycle.isReady); XCTAssertEqual(launches, 0)
+        XCTAssertEqual(delegate.applicationShouldTerminate(NSApplication.shared), .terminateNow)
+    }
+    @MainActor func testSparkleInstallationRemainsPendingOnCleanupFailure() async throws {
+        var installs = 0, terminations = 0
+        let h = LifecycleHarness(root: root, mode: .cleanupError), delegate = AppDelegate()
+        delegate.configure(h.lifecycle); delegate.statusPresented = { _ in }
+        delegate.terminateRequested = { terminations += 1 }
+        h.startBenchmark(); try await waitForBackend(h.backend)
+        delegate.prepareForUpdate { installs += 1 }
+        try await waitUntil { h.lifecycle.failure != nil }
+        XCTAssertEqual(installs, 0)
+        h.lifecycle.retry()
+        try await waitUntil { h.lifecycle.failure != nil && !h.lifecycle.isBusy }
+        XCTAssertEqual(installs, 0); XCTAssertEqual(terminations, 0)
+    }
     @MainActor func testNativeDelegateDefersReplyAndCoalescesRepeatedQuitRequests() async throws {
         let h = LifecycleHarness(root: root, mode: .heldCleanup), delegate = AppDelegate()
         var replies: [Bool] = []

@@ -40,6 +40,14 @@ class CaskGenerationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'unsigned rehearsal refused'): c.generate(self.directory, self.output)
         self.assertFalse(self.output.exists())
 
+    def test_signed_appcast_is_accepted_and_its_checksum_is_checked(self):
+        feed = self.directory / 'appcast.xml'; feed.write_text('signed feed fixture')
+        self.manifest['artifacts'][feed.name] = r.digest(feed); self.write_manifest()
+        self.assertIn('version "1.2.3"', c.generate(self.directory, self.output))
+        feed.write_text('changed feed')
+        with self.assertRaisesRegex(ValueError, 'checksum mismatch'):
+            c.generate(self.directory, self.base / 'other.rb')
+
     def test_changed_dmg_and_readback_are_rejected(self):
         self.dmg.write_bytes(b'changed after readback')
         with self.assertRaisesRegex(ValueError, 'checksum mismatch'): c.generate(self.directory, self.output)

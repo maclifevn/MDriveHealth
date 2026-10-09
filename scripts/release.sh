@@ -33,6 +33,9 @@ python3 "$ROOT/scripts/release_artifacts.py" snapshot "$ROOT" "$DIST/source"
 cd "$DIST/source"
 python3 scripts/release_artifacts.py toolchain . "$DIST/toolchain.json"
 xcodegen generate > "$DIST/xcodegen.log" 2>&1
+SOURCE_PACKAGES="$DIST/source-packages"
+xcodebuild -resolvePackageDependencies -project MDriveHealth.xcodeproj -scheme MDriveHealth \
+  -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" > "$DIST/package-resolution.log" 2>&1
 python3 -m unittest discover -s scripts/tests -v > "$DIST/packaging-tests.log" 2>&1
 SOURCE="$DIST/MDriveHealth-$VERSION-source.zip"
 python3 scripts/release_artifacts.py seal . "$SOURCE"
@@ -40,10 +43,12 @@ echo 'Running Core and app model tests from the sealed snapshot.'
 swift test --package-path Packages/MDriveHealthCore > "$DIST/core-tests.log" 2>&1
 xcodebuild -project MDriveHealth.xcodeproj -scheme MDriveHealth -configuration Debug \
   -derivedDataPath "$DIST/test-derived-data" -resultBundlePath "$DIST/app-tests.xcresult" \
+  -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" \
   CODE_SIGNING_ALLOWED=NO test > "$DIST/app-tests.log" 2>&1
 echo 'Archiving universal Release with the pinned, actual SDK.'
 xcodebuild -project MDriveHealth.xcodeproj -scheme MDriveHealth -configuration Release \
   -archivePath "$DIST/MDriveHealth.xcarchive" -derivedDataPath "$DIST/archive-derived-data" \
+  -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" \
   ARCHS='arm64 x86_64' ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO archive > "$DIST/archive.log" 2>&1
 python3 scripts/release_artifacts.py verify-source "$SOURCE" --root . > "$DIST/source-verified.json"
 APP="$DIST/MDriveHealth.app"
@@ -52,7 +57,8 @@ python3 scripts/release_artifacts.py embed "$APP" "$SOURCE"
 SDK=$(python3 -c 'import json; print(json.load(open("Config/ReleaseToolchain.json"))["macOSSDK"])')
 python3 scripts/release_artifacts.py verify-app "$APP" "$SOURCE" "$SDK" "$DIST/app-before-signing.json"
 if [[ -n "$IDENTITY" ]]; then
-  echo 'Signing helper first, then app; verifying nested signatures.'
+  echo 'Signing Sparkle, measurement helper, then app; verifying nested signatures.'
+  python3 scripts/release_artifacts.py sign-sparkle "$APP" "$IDENTITY"
   codesign --force --sign "$IDENTITY" --timestamp --options runtime --identifier com.maclife.MDriveHealth.worker "$APP/Contents/MacOS/MDriveHealthWorker"
   codesign --force --sign "$IDENTITY" --timestamp --options runtime "$APP"
   codesign --verify --deep --strict --verbose=4 "$APP" > "$DIST/signature-verification.log" 2>&1
@@ -88,15 +94,21 @@ if [[ -n "$IDENTITY" ]]; then
   spctl --assess --type open --context context:primary-signature --verbose=4 "$DMG" > "$DIST/gatekeeper-dmg.log" 2>&1
 fi
 python3 scripts/release_artifacts.py verify-dmg "$DMG" "$APP" "$SOURCE" "$SDK" "$DIST/dmg-readback.json"
+if [[ -n "$IDENTITY" ]]; then
+  python3 scripts/sparkle_appcast.py "$DMG" "$APP" "$DIST/sparkle" \
+    --tools-dir "$SOURCE_PACKAGES/artifacts/sparkle/Sparkle/bin" > "$DIST/sparkle-appcast.log" 2>&1
+  cp "$DIST/sparkle/appcast.xml" "$DIST/appcast.xml"
+fi
 python3 - "$DIST" "$DMG" "$SOURCE" "$IDENTITY" <<'PY'
 import hashlib, json, pathlib, sys
 from scripts.release_artifacts import write_checksums
 directory, dmg, source = map(pathlib.Path, sys.argv[1:4])
 report = json.loads((directory / 'dmg-readback.json').read_text())
 report['distribution'] = 'signed-notarized' if sys.argv[4] else 'unsigned-rehearsal'
-report['artifacts'] = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in [dmg, source]}
+artifacts = [dmg, source] + ([directory / 'appcast.xml'] if (directory / 'appcast.xml').is_file() else [])
+report['artifacts'] = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in artifacts}
 report['toolchain'] = json.loads((directory / 'toolchain.json').read_text())
-write_checksums(directory, [dmg, source])
+write_checksums(directory, artifacts)
 (directory / 'release-manifest.json').write_text(json.dumps(report, indent=2) + '\n')
 PY
 echo "Artifacts: $DMG and $SOURCE"

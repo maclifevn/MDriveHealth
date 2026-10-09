@@ -453,7 +453,7 @@ private struct FixtureActions: View {
             FixtureStatusColors(harness: harness)
         }.windowResizability(.contentSize)
         Settings {
-            SettingsView(history: harness.store.history).environment(harness.monitor).environment(harness.lifecycle).environment(harness.loginItems)
+            SettingsView(history: harness.store.history, updater: SparkleUpdateController(prepareInstallation: { _ in })).environment(harness.monitor).environment(harness.lifecycle).environment(harness.loginItems)
         }
         .commands {
             CommandMenu("Fixture") {
